@@ -1,0 +1,1 @@
+# gitlab-log-mcp-server
