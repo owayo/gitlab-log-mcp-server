@@ -1,0 +1,122 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+- パッケージ管理には uv を利用する
+- パッケージ追加はpyproject.toml を直接編集するのではなく、`uv add` にて行う
+- mcp[cli] を利用し、MCPサーバを作成する
+```
+from mcp.server.fastmcp import FastMCP
+
+# Initialize MCP server
+mcp = FastMCP("xxx")
+mcp.run(transport="stdio")
+```
+- mcp[cli] の詳細は https://github.com/modelcontextprotocol/python-sdk を参照する
+- プロジェクトルートにエントリーのPythonを作成する
+- ソースファイルは適切に分割し src 配下に作成する
+- @Web を利用し、ベストプラクティスに準拠させること
+- エントリーのPythonファイルは以下のように作ること
+  MCPで呼ばせる関数には `@mcp.tool()` をつけること
+```
+@mcp.tool()
+def demo_function(arg: str) -> str:
+    """簡潔な関数の説明(MCPで利用させるための理解しやすい文)"""
+```
+- @mcp.tool() デコレータ付きの関数のコメントスタイルについて、MCPでは関数の説明を簡潔な1行のドキュメントにする
+- テストするための手段を設けること
+```
+if __name__ == "__main__":
+    args = sys.argv[1:]
+
+    if not args:
+        mcp.run(transport="stdio")
+    elif args[0] == "test" and len(args) == 2:
+        print(xxx(args[1]))
+    else:
+        print("""使用方法:
+<使用方法を出力>
+""")
+```
+- MCPの設定には以下のように行えるようにする。envを活用してユーザごとのデータを設定できるようにする
+```
+"<mcp名>": {
+  "command": "npx",
+  "args": [
+    "-y",
+    "mcpのライブラリのパス"
+  ],
+  "env": {
+    "KEY": "VALUE"
+  }
+}
+```
+- READMEやusageに出力するコマンド例は `uv run` を使用する
+- READMEにはClaude Desktop、CursorのMCP設定例を記述する
+## Claude for Desktopでの設定
+
+`claude_desktop_config.json` に以下の設定を追加してください：
+```json
+{
+    "mcpServers": {
+        "xxx": {
+            "command": "uv",
+            "args": [
+                "--directory",
+                "/path/to/this-mcp-server",  # このプロジェクトディレクトリの絶対パスに書き換えてください
+                "run",
+                "xxx.py"
+            ],
+            "env": {
+              "ANY_ENV": "VALUE"
+            }
+        }
+    }
+}
+```
+## Cursorでの設定
+`.cursor/mcp.json` に以下の設定を追加してください：
+ENVが有る場合
+```json
+{
+    "mcpServers": {
+        "xxx": {
+            "command": "env",
+            "args": [
+                "ANY_ENV=VALUE",
+                "uv",
+                "--directory",
+                "/path/to/this-mcp-server",  # このプロジェクトディレクトリの絶対パスに書き換えてください
+                "run",
+                "xxx.py"
+            ]
+        }
+    }
+}
+ENVが無い場合
+```json
+{
+    "mcpServers": {
+        "xxx": {
+            "command": "uv",
+            "args": [
+                "--directory",
+                "/path/to/this-mcp-server",  # このプロジェクトディレクトリの絶対パスに書き換えてください
+                "run",
+                "xxx.py"
+            ]
+        }
+    }
+}
+```
+- READMEのインストールは以下のように記述する
+```
+# uvのインストール
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+
+$ cd /path/to/this-mcp-server
+# ライブラリのインストール
+$ uv sync
+```
